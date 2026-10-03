@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dirigir en boudoir · Taller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F1E8DB; --surface:#E8DCCB; --ink:#16120E; --muted:#4E2E24; --line:#CDA79A;
+  --accent:#7E2A2E; --accent-ink:#F1E8DB; --warm:#9A6E58; --soft:#CF9A6C;
+  --serif:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --sans:'Jost', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16120E; --surface:#221B15; --ink:#F1E8DB; --muted:#CDA79A; --line:#3A2F27;
+    --accent:#CF9A6C; --accent-ink:#16120E; --warm:#9A6E58; --soft:#CF9A6C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16120E; --surface:#221B15; --ink:#F1E8DB; --muted:#CDA79A; --line:#3A2F27;
+  --accent:#CF9A6C; --accent-ink:#16120E; --warm:#9A6E58; --soft:#CF9A6C;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.app{max-width:1100px;margin:0 auto;padding:20px 24px 120px}
+header.top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:8px 0 20px;border-bottom:1px solid var(--line)}
+.sig{font-family:var(--serif);font-style:italic;font-size:28px}
+.course{color:var(--muted);font-size:15px}
+.theme-btn{background:none;border:1px solid var(--line);border-radius:999px;padding:8px 16px;min-height:44px;color:var(--muted)}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,5vw,48px);line-height:1.05;margin:28px 0 8px}
+h2{font-family:var(--serif);font-weight:600;font-size:26px;margin:28px 0 10px;color:var(--accent)}
+.lead{color:var(--muted);max-width:62ch;margin:0 0 20px}
+section.view{display:none}
+section.view.on{display:block}
+
+/* bottom nav */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:4px;z-index:5}
+nav.tabs button{flex:1;max-width:180px;min-height:56px;background:none;border:0;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:14px;color:var(--muted)}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+nav.tabs button[aria-current="page"]{color:var(--ink);background:var(--bg)}
+nav.tabs button[aria-current="page"] span{border-bottom:2px solid var(--accent)}
+
+/* segmented */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px;flex-wrap:wrap}
+.seg button{border:0;background:none;border-radius:999px;padding:8px 18px;min-height:44px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* clock */
+.clock{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start;margin-top:24px}
+@media (max-width:760px){.clock{grid-template-columns:1fr}}
+.dial{position:relative;aspect-ratio:1;max-width:440px;width:100%;margin:0 auto}
+.dial svg{width:100%;height:100%;transform:rotate(-90deg)}
+.dial .track{stroke:var(--line)}
+.dial .prog{stroke:var(--accent);transition:stroke-dashoffset .4s linear}
+.dial .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18%}
+.time{font-family:var(--serif);font-size:clamp(64px,12vw,112px);line-height:1;font-variant-numeric:tabular-nums;font-weight:500}
+.time.over{color:var(--accent)}
+.now-title{font-family:var(--serif);font-size:22px;margin-top:10px;line-height:1.2}
+.now-sub{color:var(--muted);font-size:15px;margin-top:4px}
+.controls{display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.btn{min-height:52px;padding:0 24px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);min-width:150px}
+.queue{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.queue li{border-bottom:1px solid var(--line)}
+.queue button{width:100%;text-align:left;background:none;border:0;padding:14px 4px;min-height:56px;display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center}
+.queue .t{font-variant-numeric:tabular-nums;color:var(--muted);font-size:15px}
+.queue .n{font-size:17px}
+.queue .n small{display:block;color:var(--muted);font-size:14px}
+.queue .d{color:var(--muted);font-size:14px}
+.queue li.cur button{color:var(--ink)}
+.queue li.cur .n{font-weight:600}
+.queue li.cur{background:var(--surface)}
+.queue li.done .n{color:var(--muted);text-decoration:line-through}
+.field{display:flex;align-items:center;gap:12px;margin:16px 0;flex-wrap:wrap}
+
+/* sequence */
+.seq{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.pose{background:var(--surface);border-radius:4px;padding:20px 22px;display:flex;flex-direction:column;gap:8px;position:relative}
+.pose .num{font-family:var(--serif);font-size:44px;line-height:1;color:var(--accent)}
+.pose h3{font-family:var(--serif);font-size:26px;font-weight:600;margin:0;line-height:1.1}
+.pose p{margin:0;color:var(--muted);font-size:16px}
+.pose .key{color:var(--ink);font-size:17px;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+table.t2{width:100%;border-collapse:collapse}
+.t2 th{text-align:left;font-weight:500;color:var(--accent);font-size:15px;padding:10px 12px 10px 0;border-bottom:1.5px solid var(--muted)}
+.t2 td{padding:14px 12px 14px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.t2 td.no{color:var(--muted);width:42%}
+.scroll{overflow-x:auto}
+.never{columns:2;column-gap:40px;padding:0;list-style:none;margin:0}
+@media (max-width:640px){.never{columns:1}}
+.never li{break-inside:avoid;padding:10px 0;border-bottom:1px solid var(--line);display:flex;gap:10px}
+.never li::before{content:"×";color:var(--accent);font-weight:600}
+
+/* checklist */
+.progress{display:flex;align-items:center;gap:14px;margin:8px 0 6px}
+.bar{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:15px}
+.checks{list-style:none;padding:0;margin:0}
+.checks li{border-bottom:1px solid var(--line)}
+.checks label{display:flex;gap:16px;align-items:flex-start;padding:14px 4px;min-height:56px;cursor:pointer}
+.checks input{appearance:none;-webkit-appearance:none;flex:none;width:26px;height:26px;border:1.5px solid var(--muted);border-radius:4px;margin:0;display:grid;place-content:center;background:var(--bg)}
+.checks input:checked{background:var(--accent);border-color:var(--accent)}
+.checks input:checked::after{content:"";width:12px;height:7px;border-left:2px solid var(--accent-ink);border-bottom:2px solid var(--accent-ink);transform:rotate(-45deg) translate(1px,-1px)}
+.checks input:checked + span{color:var(--muted)}
+.row-actions{display:flex;justify-content:flex-end;margin-top:28px}
+
+/* observation */
+.obs{width:100%;border-collapse:collapse;min-width:620px}
+.obs th,.obs td{border-bottom:1px solid var(--line);padding:8px}
+.obs th{font-weight:500;color:var(--accent);font-size:15px;text-align:center}
+.obs th:first-child,.obs td:first-child{text-align:left}
+.obs td:first-child strong{font-family:var(--serif);font-size:21px;font-weight:600;display:block;line-height:1.1}
+.obs td:first-child span{color:var(--muted);font-size:14px}
+.obs input.nm{width:100%;min-width:90px;border:0;border-bottom:1px solid var(--line);background:none;padding:6px 2px;text-align:center;min-height:44px}
+.score{width:56px;height:56px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-family:var(--serif);font-size:26px;display:block;margin:0 auto}
+.score[data-v="1"]{border-color:var(--warm)}
+.score[data-v="2"]{background:var(--surface);border-color:var(--muted)}
+.score[data-v="3"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.legend{color:var(--muted);font-size:15px;margin:0 0 14px}
+.totals td{font-variant-numeric:tabular-nums;text-align:center;color:var(--muted)}
+textarea{width:100%;min-height:110px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:4px;padding:12px;font:inherit;resize:vertical}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div><div class="sig">Roberto Olea</div><div class="course">Taller · Dirigir en boudoir</div></div>
+    <button class="theme-btn" id="themeBtn" type="button">Tema claro</button>
+  </header>
+
+  <!-- RELOJ -->
+  <section class="view on" id="v-reloj" aria-labelledby="h-reloj">
+    <h1 id="h-reloj">Reloj del taller</h1>
+    <div class="seg" role="group" aria-label="Modo del reloj">
+      <button type="button" data-mode="agenda" aria-pressed="true">Agenda del curso</button>
+      <button type="button" data-mode="rot" aria-pressed="false">Rotación en vivo</button>
+    </div>
+    <div class="field" id="rotField" hidden>
+      <label for="nAl">Alumnos en el grupo</label>
+      <select id="nAl" class="btn">
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option>
+      </select>
+    </div>
+    <div class="clock">
+      <div>
+        <div class="dial">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="track" cx="100" cy="100" r="92" fill="none" stroke-width="2"/>
+            <circle class="prog" id="prog" cx="100" cy="100" r="92" fill="none" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <div class="center">
+            <div class="time" id="time" aria-live="polite">00:00</div>
+            <div class="now-title" id="nowTitle">—</div>
+            <div class="now-sub" id="nowSub"></div>
+          </div>
+        </div>
+        <div class="controls">
+          <button type="button" class="btn" id="prevBtn">Anterior</button>
+          <button type="button" class="btn primary" id="playBtn">Iniciar</button>
+          <button type="button" class="btn" id="nextBtn">Siguiente</button>
+        </div>
+      </div>
+      <ol class="queue" id="queue"></ol>
+    </div>
+  </section>
+
+  <!-- SECUENCIA -->
+  <section class="view" id="v-seq" aria-labelledby="h-seq">
+    <h1 id="h-seq">Secuencia de poses</h1>
+    <p class="lead">De lo fácil a lo íntimo. Dentro de cada familia, varía luz y encuadre (completo, medio, cerrado) antes de pasar a la siguiente.</p>
+    <div class="seq" id="seq"></div>
+    <h2>Correcciones rápidas</h2>
+    <div class="scroll"><table class="t2" id="fix"></table></div>
+  </section>
+
+  <!-- FRASES -->
+  <section class="view" id="v-fr" aria-labelledby="h-fr">
+    <h1 id="h-fr">Cómo decirlo</h1>
+    <p class="lead">Lenguaje no sexual siempre. Elogia luz, mirada y actitud, nunca partes del cuerpo.</p>
+    <div class="scroll"><table class="t2" id="phr"></table></div>
+    <h2>Lo que nunca se dice en sesión</h2>
+    <ul class="never" id="never"></ul>
+  </section>
+
+  <!-- CHECKLIST -->
+  <section class="view" id="v-ck" aria-labelledby="h-ck">
+    <h1 id="h-ck">Checklist de sesión</h1>
+    <div class="progress"><div class="bar"><i id="ckBar"></i></div><span class="count" id="ckCount">0 de 0</span></div>
+    <div id="ck"></div>
+    <div class="row-actions"><button type="button" class="btn" id="ckReset">Empezar una sesión nueva</button></div>
+  </section>
+
+  <!-- OBSERVACION -->
+  <section class="view" id="v-obs" aria-labelledby="h-obs">
+    <h1 id="h-obs">Hoja de observación</h1>
+    <p class="legend">Toca un círculo para calificar: 1 falta trabajo · 2 bien · 3 excelente. Toca de nuevo para cambiar.</p>
+    <div class="scroll"><table class="obs" id="obs"></table></div>
+    <h2>Notas para la retro</h2>
+    <label for="obsNotes" class="legend" style="display:block">Una instrucción que funcionó y una que confundió, por alumno.</label>
+    <textarea id="obsNotes"></textarea>
+    <div class="row-actions"><button type="button" class="btn" id="obsReset">Limpiar hoja</button></div>
+  </section>
+</div>
+
+<nav class="tabs" aria-label="Secciones">
+  <button type="button" data-v="v-reloj" aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 3h6"/></svg><span>Reloj</span></button>
+  <button type="button" data-v="v-seq"><svg viewBox="0 0 24 24"><path d="M5 20V10M10 20V6M15 20v-8M20 20V4"/></svg><span>Poses</span></button>
+  <button type="button" data-v="v-fr"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Frases</span></button>
+  <button type="button" data-v="v-ck"><svg viewBox="0 0 24 24"><path d="M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8M12 20h8"/></svg><span>Checklist</span></button>
+  <button type="button" data-v="v-obs"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg><span>Observación</span></button>
+</nav>
+
+<script>
+(function(){
+  var store={get:function(k,d){try{var v=localStorage.getItem('rob-boudoir:'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+             set:function(k,v){try{localStorage.setItem('rob-boudoir:'+k,JSON.stringify(v))}catch(e){}}};
+  function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){if(k==='text')e.textContent=a[k];else e.setAttribute(k,a[k])}(c||[]).forEach(function(x){e.appendChild(typeof x==='string'?document.createTextNode(x):x)});return e}
+
+  /* theme */
+  var root=document.documentElement, themeBtn=document.getElementById('themeBtn');
+  function isDark(){var t=root.getAttribute('data-theme');if(t)return t==='dark';return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches}
+  function syncTheme(){themeBtn.textContent=isDark()?'Tema claro':'Tema oscuro'}
+  var savedTheme=store.get('theme',null); if(savedTheme)root.setAttribute('data-theme',savedTheme);
+  syncTheme();
+  themeBtn.addEventListener('click',function(){var n=isDark()?'light':'dark';root.setAttribute('data-theme',n);store.set('theme',n);syncTheme()});
+
+  /* tabs */
+  var tabs=document.querySelectorAll('nav.tabs button');
+  function show(id){document.querySelectorAll('section.view').forEach(function(s){s.classList.toggle('on',s.id===id)});
+    tabs.forEach(function(b){if(b.dataset.v===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});store.set('tab',id);window.scrollTo(0,0)}
+  tabs.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.v)})});
+  show(store.get('tab','v-reloj'));
+
+  /* data */
+  var FAM=[
+    {n:'Rompehielo',w:'Vestida, de pie. Cero exposición; aprende a seguir instrucciones.',k:'Peso en la pierna de atrás, hombro hacia la cámara.'},
+    {n:'De pie con apoyo',w:'Pared o marco de puerta. Le da dónde poner manos y peso.',k:'Recargarse con un hombro, cadera fuera de la pared.'},
+    {n:'Sentada',w:'Borde de cama o silla. Postura natural y segura.',k:'Espalda larga, una pierna cruzada o recogida.'},
+    {n:'Mirada sobre el hombro',w:'Muestra espalda y postura sin exponer.',k:'De espaldas a la cámara, voltear solo la barbilla.'},
+    {n:'Recostada',w:'Cama o sillón. Curvas más marcadas; ya hay confianza.',k:'Arquear la espalda, piernas largas, almohadas de apoyo.'},
+    {n:'Con elementos',w:'Sábana, bata o silla. Le da algo que tocar.',k:'Interactuar con el objeto, no solo sostenerlo.'}];
+  var AGENDA=[['Bienvenida y reglas del día',20],['Módulo 1 · Psicología de la clienta',30],['Módulo 2 · Preparación previa',30],['Módulo 3 · Lenguaje de dirección',40],['Descanso',15],['Módulo 4 · Posado',45],['Módulo 5 · Práctica en vivo',70],['Retro y cierre',20]];
+  function famLabel(a){return a.map(function(i){return FAM[i].n}).join(' + ')}
+  function rotation(n){
+    var p=[];
+    if(n===1)p.push(['Alumno 1',50,[0,1,2,3,4,5]]);
+    if(n===2){p.push(['Alumno 1',25,[0,1,2]]);p.push(['Alumno 2',25,[3,4,5]])}
+    if(n===3){p.push(['Alumno 1',17,[0,1]]);p.push(['Alumno 2',17,[2,3]]);p.push(['Alumno 3',16,[4,5]])}
+    if(n===4){for(var i=0;i<4;i++)p.push(['Alumno '+(i+1),10,[i]]);p.push(['Alumno 1 · 2ª vuelta',5,[4]]);p.push(['Alumno 2 · 2ª vuelta',5,[5]])}
+    if(n===5){p.push(['Instructor · demostración',5,[0]]);for(var j=0;j<5;j++)p.push(['Alumno '+(j+1),9,[j+1]])}
+    p.push(['Cierre con la invitada',10,[]]);
+    return p.map(function(x){return {t:x[0],m:x[1],s:x[2].length?famLabel(x[2]):'Ya vestida: qué la hizo sentir cómoda y qué la tensó'}});
+  }
+
+  /* clock */
+  var mode=store.get('mode','agenda'), nAl=store.get('nAl',5), items=[], idx=0, left=0, running=false, timer=null, last=0;
+  var C=2*Math.PI*92, prog=document.getElementById('prog'); prog.style.strokeDasharray=C;
+  var timeEl=document.getElementById('time'), queue=document.getElementById('queue'), playBtn=document.getElementById('playBtn');
+  var sel=document.getElementById('nAl'); sel.value=String(nAl);
+  function build(){
+    items = mode==='agenda' ? AGENDA.map(function(a){return {t:a[0],m:a[1],s:''}}) : rotation(nAl);
+    document.getElementById('rotField').hidden = mode!=='rot';
+    document.querySelectorAll('.seg button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.mode===mode))});
+    queue.innerHTML=''; var acc=0;
+    items.forEach(function(it,i){
+      var hh=Math.floor(acc/60), mm=acc%60, start=hh+':'+(mm<10?'0':'')+mm; acc+=it.m;
+      var b=el('button',{type:'button'},[el('span',{class:'t',text:start}),el('span',{class:'n'},[it.t,it.s?el('small',{text:it.s}):'']),el('span',{class:'d',text:it.m+' min'})]);
+      b.addEventListener('click',function(){go(i)});
+      queue.appendChild(el('li',{},[b]));
+    });
+    go(0);
+  }
+  function fmt(s){var neg=s<0;s=Math.abs(Math.round(s));var m=Math.floor(s/60),x=s%60;return (neg?'+':'')+(m<10?'0':'')+m+':'+(x<10?'0':'')+x}
+  function render(){
+    var it=items[idx], total=it.m*60;
+    timeEl.textContent=fmt(left); timeEl.classList.toggle('over',left<0);
+    var frac=Math.max(0,Math.min(1,left/total)); prog.style.strokeDashoffset=C*(1-frac);
+    document.getElementById('nowTitle').textContent=it.t;
+    document.getElementById('nowSub').textContent=it.s||(idx+1)+' de '+items.length;
+    playBtn.textContent=running?'Pausar':(left<total?'Continuar':'Iniciar');
+    [].forEach.call(queue.children,function(li,i){li.classList.toggle('cur',i===idx);li.classList.toggle('done',i<idx)});
+  }
+  function go(i){idx=Math.max(0,Math.min(items.length-1,i));left=items[idx].m*60;stop();render()}
+  function tick(){var now=Date.now();left-=(now-last)/1000;last=now;render()}
+  function start(){running=true;last=Date.now();timer=setInterval(tick,250);render()}
+  function stop(){running=false;clearInterval(timer);render&&items.length&&render()}
+  playBtn.addEventListener('click',function(){running?stop():start()});
+  document.getElementById('nextBtn').addEventListener('click',function(){var r=running;go(idx+1);if(r)start()});
+  document.getElementById('prevBtn').addEventListener('click',function(){go(idx-1)});
+  document.querySelectorAll('.seg button').forEach(function(b){b.addEventListener('click',function(){mode=b.dataset.mode;store.set('mode',mode);build()})});
+  sel.addEventListener('change',function(){nAl=parseInt(sel.value,10);store.set('nAl',nAl);build();buildObs()});
+  build();
+
+  /* sequence */
+  var seq=document.getElementById('seq');
+  FAM.forEach(function(f,i){seq.appendChild(el('article',{class:'pose'},[el('div',{class:'num',text:String(i+1)}),el('h3',{text:f.n}),el('p',{text:f.w}),el('p',{class:'key',text:f.k})]))});
+  function table(id,h,rows){var t=document.getElementById(id);t.appendChild(el('tr',{},h.map(function(x){return el('th',{scope:'col',text:x})})));
+    rows.forEach(function(r){t.appendChild(el('tr',{},[el('td',{class:'no',text:r[0]}),el('td',{text:r[1]})]))})}
+  table('fix',['Lo que ves','La corrección'],[
+    ['Brazos pegados que se ven anchos','Sepáralos del torso, aunque sea un poco'],
+    ['Cintura sin forma','Busca el ángulo donde la cintura se ve más estrecha'],
+    ['Recostada de frente, pierna corta','Dobla levemente la pierna de arriba; la de abajo recta'],
+    ['Recostada de espaldas, sin volumen','Recta la de arriba, doblada la de abajo, pies juntos'],
+    ['Cuerpo deformado','Lente de 50 u 85 mm y más distancia'],
+    ['Cara en sombra','Ilumina bien el rostro o déjalo fuera del cuadro'],
+    ['Manos en garra o puño','Dedos sueltos, mano de perfil, tocar con las yemas']]);
+  table('phr',['En lugar de…','Mejor di…'],[
+    ['“Ponte sexy”','“Baja la barbilla y mírame como si supieras un secreto”'],
+    ['“Se te hace papada, estira el cuello”','“Lleva la frente hacia mí”'],
+    ['“Saca las pompas”','“Lleva la cadera hacia atrás y arquea la espalda”'],
+    ['“Qué bien se te ve el busto”','“Mira cómo la luz dibuja tu silueta”'],
+    ['“Perfecto… perfecto… perfecto”','“Esa mirada es justo la que buscaba”'],
+    ['“Ups, me equivoqué con la luz”','Ajusta en silencio y sigue'],
+    ['“Sí, ese lado no te favorece”','“Vamos a probar este ángulo, te va a encantar”'],
+    ['Silencio mientras ajustas','“Dame un segundo, estoy afinando la luz para ti”']]);
+  var never=['Pedir “sé sexy”','Prometer que “en edición se verá mejor”','Quedarte en silencio','Resaltar tus propios errores','Usar palabras inapropiadas','Ser negativo','Repetir la misma palabra','Tocar sin preguntar','Explicar por qué corriges algo','Darle la razón cuando se critica','Pedir solo “sonríe”'];
+  var nv=document.getElementById('never'); never.forEach(function(x){nv.appendChild(el('li',{text:x}))});
+
+  /* checklist */
+  var CK=[
+    ['Días antes',['Tuve al menos una llamada o videollamada con ella, no solo mensajes.','Sé por qué quiere la sesión y para quién son las fotos.','Sé qué le gusta de su cuerpo y qué prefiere no mostrar.','Conozco su límite de piel (lencería, sábana, implied).','Pregunté por lesiones o limitaciones físicas.','Tengo sus referencias visuales y su música favorita.','Le mandé un video o guía de cómo es una sesión.','Le escribí sobre su vestuario durante la semana.','Tengo mi secuencia de poses escrita y adaptada a ella.']],
+    ['El día, antes de que llegue',['Le confirmé hora, dirección y estacionamiento.','Set limpio, temperatura cálida, zona de cambio y baño listos.','Agua, bata y algo de comer a la mano.','Luz probada; la primera foto ya puede ser buena.','Lente de 50 u 85 mm montado.','Playlist lista a volumen de conversación.']],
+    ['Al recibirla',['La recibí en la puerta y le mostré el espacio.','Le expliqué el plan paso a paso.','Le dije que no tiene que saber posar ni “ser sexy”: yo la guío.','Le dije que estar nerviosa es normal y se pasa pronto.','Le dije que puede pausar o cambiar de opinión en cualquier momento.']],
+    ['Durante la sesión',['Empecé con ella casi vestida.','Fui de poses fáciles a poses más íntimas.','Demostré cada pose en espejo antes de pedirla.','Di instrucciones específicas, de pies a cabeza, incluida la expresión.','Revisé cada instrucción en el visor y ajusté un detalle a la vez.','Le mostré la pantalla cuando tuve una buena foto.','Elogié luz, mirada y actitud; nunca partes del cuerpo.','Usé lenguaje no sexual (“cadera atrás”, “arquea la espalda”).','No hubo silencios largos; mantuve la conversación.','Pedí permiso antes de cualquier contacto.','No validé su autocrítica ni señalé defectos al corregir.','Revisé temperatura y comodidad en cada cambio de vestuario.','Varié encuadre y luz dentro de cada familia de poses.','Dejé 10–15 minutos al final para crear libremente.']],
+    ['Al terminar',['Le agradecí y le dije algo específico que hizo bien.','Le pregunté cómo se sintió y qué cambiaría.','Anoté qué instrucciones funcionaron y cuáles no, para la próxima clienta.']]];
+  var ckState=store.get('ck',{}), ckWrap=document.getElementById('ck'), total=0;
+  CK.forEach(function(g,gi){ckWrap.appendChild(el('h2',{text:g[0]}));var ul=el('ul',{class:'checks'});
+    g[1].forEach(function(t,ti){total++;var id='c'+gi+'_'+ti;var inp=el('input',{type:'checkbox',id:id});inp.checked=!!ckState[id];
+      inp.addEventListener('change',function(){ckState[id]=inp.checked;store.set('ck',ckState);ckProg()});
+      ul.appendChild(el('li',{},[el('label',{for:id},[inp,el('span',{text:t})])]))});ckWrap.appendChild(ul)});
+  function ckProg(){var d=Object.keys(ckState).filter(function(k){return ckState[k]}).length;document.getElementById('ckCount').textContent=d+' de '+total;document.getElementById('ckBar').style.width=(100*d/total)+'%'}
+  ckProg();
+  document.getElementById('ckReset').addEventListener('click',function(){if(!confirm('¿Desmarcar todo para una sesión nueva?'))return;ckState={};store.set('ck',ckState);ckWrap.querySelectorAll('input').forEach(function(i){i.checked=false});ckProg()});
+
+  /* observation */
+  var CRIT=[['Arranque','¿Explicó qué iban a hacer antes de disparar?'],['Claridad','¿Sus instrucciones se entendieron a la primera?'],['Canal','¿Usó espejo y gestos, o solo voz?'],['Lenguaje','¿Evitó frases sexuales y señalar defectos?'],['Retro','¿Le mostró la pantalla y la elogió de forma específica?'],['Energía','¿Se le vio calmado y en control?']];
+  var obs=store.get('obs',{names:{},s:{}}), notes=document.getElementById('obsNotes');
+  notes.value=store.get('obsNotes','');
+  notes.addEventListener('input',function(){store.set('obsNotes',notes.value)});
+  function buildObs(){
+    var t=document.getElementById('obs');t.innerHTML='';
+    var hr=el('tr',{},[el('th',{scope:'col',text:'Criterio'})]);
+    for(var a=1;a<=nAl;a++){(function(a){var inp=el('input',{class:'nm',type:'text','aria-label':'Nombre del alumno '+a,placeholder:'Alumno '+a});inp.value=obs.names[a]||'';
+      inp.addEventListener('input',function(){obs.names[a]=inp.value;store.set('obs',obs)});hr.appendChild(el('th',{scope:'col'},[inp]))})(a)}
+    t.appendChild(hr);
+    CRIT.forEach(function(c,ci){var tr=el('tr',{},[el('td',{},[el('strong',{text:c[0]}),el('span',{text:c[1]})])]);
+      for(var a=1;a<=nAl;a++){(function(a){var key=ci+'_'+a,v=obs.s[key]||0;
+        var b=el('button',{type:'button',class:'score','data-v':String(v),'aria-label':c[0]+', alumno '+a+': '+(v||'sin calificar')});b.textContent=v||'·';
+        b.addEventListener('click',function(){v=(v+1)%4;obs.s[key]=v;store.set('obs',obs);b.setAttribute('data-v',String(v));b.textContent=v||'·';b.setAttribute('aria-label',c[0]+', alumno '+a+': '+(v||'sin calificar'));sums()});
+        tr.appendChild(el('td',{},[b]))})(a)}
+      t.appendChild(tr)});
+    var tot=el('tr',{class:'totals'},[el('td',{},[el('strong',{text:'Total'}),el('span',{text:'Máximo 18'})])]);
+    for(var a2=1;a2<=nAl;a2++)tot.appendChild(el('td',{id:'sum'+a2,text:'0'}));
+    t.appendChild(tot);sums();
+  }
+  function sums(){for(var a=1;a<=nAl;a++){var s=0;for(var c=0;c<CRIT.length;c++)s+=obs.s[c+'_'+a]||0;var e=document.getElementById('sum'+a);if(e)e.textContent=s}}
+  buildObs();
+  document.getElementById('obsReset').addEventListener('click',function(){if(!confirm('¿Borrar nombres, calificaciones y notas?'))return;obs={names:{},s:{}};store.set('obs',obs);notes.value='';store.set('obsNotes','');buildObs()});
+})();
+</script>
+</body>
+</html>
